@@ -1,17 +1,17 @@
-export const emptyObject = (data: { [propsName: string]: any }) => {
+export const emptyObject = (data) => {
   Object.keys(data).map((k) => delete data[k]);
   return data;
 };
 
-function isObject(value: any) {
+function isObject(value) {
   return value === Object(value);
 }
 
-function isArray(value: any) {
+function isArray(value) {
   return Array.isArray(value);
 }
 
-function makeArrayKey(key: string | string[]) {
+function makeArrayKey(key) {
   if (key.length > 2 && key.lastIndexOf("[]") === key.length - 2) {
     return key;
   } else {
@@ -26,9 +26,9 @@ function makeArrayKey(key: string | string[]) {
  * @param {*} pre
  */
 export function objectToFormData(
-  obj: { [propsName: string]: any },
-  resultObj: { [propsName: string]: any },
-  pre?: string
+  obj,
+  resultObj,
+  pre
 ) {
   resultObj = resultObj || {};
   Object.keys(obj).forEach(function (prop) {
@@ -40,7 +40,7 @@ export function objectToFormData(
 				objectToFormData(obj[prop], resultObj, key);
 			}
     } else if (isArray(obj[prop])) {
-      obj[prop].forEach(function (value: any, i: number) {
+      obj[prop].forEach(function (value, i) {
         var arrayKey = key + "[" + i + "]";
         if (isObject(value)) {
           objectToFormData(value, resultObj, arrayKey);
@@ -60,7 +60,7 @@ export function objectToFormData(
   // return resultArr.join("&")
 }
 // 获取上一个月
-export function getLastMonth(date?: Date): {year: number, month: number}{//获取上个月日期
+export function getLastMonth(date){//获取上个月日期
   date = date || new Date(); 
   var year = date.getFullYear();
   var month = date.getMonth();
@@ -72,7 +72,7 @@ export function getLastMonth(date?: Date): {year: number, month: number}{//获�
 }
 
 // 获取月份最后一天
-export function getLastDate(year: number, month: number){
+export function getLastDate(year, month){
   const d = new Date(year, month, 0)
   return d.getDate()
 }

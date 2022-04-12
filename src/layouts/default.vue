@@ -5,10 +5,10 @@
 		</div>
 
 		<transition name="slide-fade">
-			<Tabbar v-if="showTab" v-model="tabActive" @change="tabChange" active-color="#00c853">
-				<TabbarItem name="home" icon="home-o">首页</TabbarItem>
-				<TabbarItem name="more" icon="apps-o">更多</TabbarItem>
-				<TabbarItem name="mine" icon="user-o">我的</TabbarItem>
+			<Tabbar v-if="showTab" v-model="tabActive" @change="tabChange">
+				<TabbarItem name="taskList" icon="home-o">任务</TabbarItem>
+				<TabbarItem name="workOrder" icon="apps-o">工单</TabbarItem>
+				<!-- <TabbarItem name="mine" icon="user-o">我的</TabbarItem> -->
 			</Tabbar>
 		</transition>
 		
@@ -21,8 +21,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { Tabbar, TabbarItem } from 'vant';
 const route = useRoute()
 const router = useRouter()
-const showTab = ref(false)
-const tabActive = ref('home')
+const showTab = ref(false) 
+const tabActive = ref('taskList')
 const tabChange = v => {
 	// tabActive.value = v
 	router.push('/' + v)
