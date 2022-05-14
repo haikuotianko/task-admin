@@ -130,7 +130,7 @@
 </template>
 
 <script setup lang="jsx">
-import { defineComponent, onMounted, ref, reactive, watch } from 'vue';
+import { defineComponent, onMounted, ref, reactive } from 'vue';
 import { Icon, Pagination, Loading, NavBar, Popup, DatetimePicker, Button, Field, Picker, Empty } from 'vant';
 import { format } from 'silly-datetime';
 import { getWorkOrderList } from '@/api/';
@@ -149,7 +149,7 @@ async function getWorkList(){
 	isLoading.value = true
 	try {
 		const { work_order_no, status, admin_id, start, end } = searchDate
-		const {data} = await getWorkOrderList({work_order_no, status, admin_id, work_order_time_start: formatTime(start), work_order_time_end: formatTime(end)})
+		const {data} = await getWorkOrderList({page: pageConfig.current_page,work_order_no, status, admin_id, work_order_time_start: formatTime(start), work_order_time_end: formatTime(end)})
 		workList.value = data.data
 		Object.assign(pageConfig, {
 			total: data.total,

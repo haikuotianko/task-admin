@@ -31,6 +31,8 @@ export const delFile = (data) => request.post(fileBase + '/del', data)
  * 巡检系统
  */
 const usesTask = baseURL + '/user_task'
+// 获取公众号配置
+export const getWxConfig = (data) => request.post(usesTask + '/config', data)
 // 任务列表
 export const getTaskList = (data) => request.post(usesTask + '/taskList', data)
 // 完成任务

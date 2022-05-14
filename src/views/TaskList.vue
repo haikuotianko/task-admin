@@ -3,11 +3,11 @@
 		<div v-show="isLoading" class=" transform -translate-x-1/2 absolute left-1/2 top-14 p-2 z-50 bg-gray-800 text-center py-2 rounded-lg">
 			<Loading size="24px">加载中...</Loading>
 		</div>
-		<div class="flex-auto">
+		<div class="flex-1">
 			<Tabs v-model:active="active" sticky animated swipeable>
 				<Tab title="未完成">
 					<div class="pt-3 overflow-y-auto" style="height: calc(100vh - 94px);">
-						<template v-for="(item, index) in taskList" :key="index">
+						<template v-for="(item, index) in taskList" :key="item.id">
 							<div class="card-box m-3 mt-0 shadow-md">
 								<TaskItem 
 									:index="index + 1"
@@ -16,18 +16,20 @@
 									:lev="item.lev"
 									:machine_info="item.machine_info"
 								/>
-								<OpenDetails 
-									:user_task_no="item.user_task_no"
-									:content="item.content"
-									:machine_info="item.machine_info"
-								/>
+								<div class="">
+									<OpenDetails 
+										:user_task_no="item.user_task_no"
+										:content="item.content"
+										:machine_info="item.machine_info"
+									/>
+								</div>
 							</div>
 						</template>
 					</div>
 				</Tab>
 				<Tab title="已完成">
 					<div class="pt-3 overflow-y-auto" style="height: calc(100vh - 94px);">
-						<template v-for="(item, index) in taskList" :key="index">
+						<template v-for="(item, index) in taskList" :key="item.id">
 							<div class="card-box m-3 mt-0 shadow-md">
 								<TaskItem 
 									:index="index + 1"
@@ -36,21 +38,22 @@
 									:lev="item.lev"
 									:machine_info="item.machine_info"
 								/>
-								<OpenDetails 
-									:content="item.content"
-									:machine_info="item.machine_info"
-								/>
+								<div>
+									<OpenDetails
+										:user_task_no="item.user_task_no"
+										:content="item.content"
+										:machine_info="item.machine_info"
+									/>
+								</div>
 							</div>
 						</template>
 					</div>
 				</Tab>
 			</Tabs>
 			
-			<div v-if="pageConfig.total > pageConfig.per_page" class=" h-20"></div>
-			
 		</div>
 
-		<div v-if="pageConfig.total > pageConfig.per_page" class="card-box absolute left-2 right-2 bottom-4 p-1 shadow-md z-10">
+		<div v-if="pageConfig.total >= pageConfig.per_page" class="card-box absolute left-2 right-2 bottom-14 p-1 shadow-md z-10">
 			<Pagination v-model="pageConfig.current_page" :total-items="pageConfig.total" :items-per-page="pageConfig.per_page" />
 		</div>
 	</div>
@@ -58,13 +61,14 @@
 </template>
 
 <script setup lang="jsx">
-import { defineComponent, onMounted, ref, reactive, watch } from 'vue';
+import { defineComponent, onMounted, ref, reactive, watch, onActivated } from 'vue';
+import { useRouter } from 'vue-router';
 import { Tab, Tabs, Icon, Pagination, Dialog, Field, Toast, Loading } from 'vant';
 import AIcon from '@/components/AIcon.vue';
 import { useTaskStores } from '@/stores/task';
-import { getTaskList, overTaskMachine } from '@/api/';
-import { emptyObject } from '@/utils/';
-import { useRouter } from 'vue-router';
+import { getWxConfig, getTaskList, overTaskMachine } from '@/api/';
+import { emptyObject, getCaculateLL } from '@/utils/';
+import { useWxApi, useWxApiConfig, getLocation, useOpenLocation } from '@/hooks';
 const taskStores = useTaskStores()
 const router = useRouter()
 const active = ref(0)
@@ -75,19 +79,83 @@ const pageConfig = reactive({
 	per_page: 10,
 	current_page: 1
 })
+let wxApi;
+const locationData = {
+	lat: undefined,
+	lng: undefined
+}
+function getColor(){
+	return ''
+}
+onMounted(async () => {
+	try {
+		console.time('useWxApi')
+		await useWxApi()
+		console.timeEnd('useWxApi')
+		const res = await getWxConfig({url: location.href.split('#')[0]})
+		wxApi = await useWxApiConfig({
+			// debug: false, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
+			// appId: '', // 必填，公众号的唯一标识
+			// timestamp: '', // 必填，生成签名的时间戳
+			// nonceStr: '', // 必填，生成签名的随机串
+			// signature: '',// 必填，签名
+			...res.data,
+			jsApiList: ['getLocation', 'openLocation'] // 必填，需要使用的JS接口列表
+		})
+		console.log(wxApi)
+		const { latitude, longitude } = await getLocation()
+		locationData.lat = latitude
+		locationData.lng = longitude
+	} catch (error) {
+		Toast.fail(typeof error == 'string' ? error : '定位失败！')
+	}
+	getTaskListData()
+	
+})
 
+async function toOpenLocation(item){
+	// latitude: 0, // 纬度，浮点数，范围为90 ~ -90
+	// longitude: 0, // 经度，浮点数，范围为180 ~ -180。
+	// name: '', // 位置名
+	// address: '', // 地址详情说明
+	const { latitude, longitude, address, address_name, machine_name } = item
+	if(!latitude || !longitude) return Toast.fail('经纬度为空，无法导航！')
+	Toast.loading({
+		message: '加载中...',
+		forbidClick: true
+	})
+	try {
+		await useOpenLocation({
+			latitude,
+			longitude,
+			name: machine_name,
+			address: address || address_name || machine_name
+		})
+		Toast.clear()
+		console.log('打开导航成功')
+	} catch (error) {
+		Toast.fail(typeof error == 'string' ? error : '定位失败！')
+	}
+}
 watch(() => active.value, () => {
+	taskList.value = []
 	upDataList()
 })
+
 function upDataList(){
 	pageConfig.current_page === 1 ?
 	getTaskListData() :
 	pageConfig.current_page = 1
 }
+onActivated(() => {
+	console.log('显示')
+	if(!isLoading.value){
+		upDataList()
+	}
+})
 async function getTaskListData(){
-	taskList.value = []
 	isLoading.value = true
-	const {data} = await getTaskList({status: active.value})
+	const {data} = await getTaskList({status: active.value, ...locationData, page: pageConfig.current_page})
 	isLoading.value = false
 	taskList.value = data.data
 	// console.log(res)
@@ -97,7 +165,6 @@ async function getTaskListData(){
 		current_page: data.current_page
 	})
 }
-onMounted(getTaskListData)
 watch(() => pageConfig.current_page, getTaskListData)
 
 const SendTaskInp = defineComponent({
@@ -202,7 +269,29 @@ const OpenDetails = defineComponent({
 				default: return <span class=" text-7xl"> <AIcon name="icon-yichang" /> </span>
 			}
 		}
-		function clickSuccessTask(item){
+		async function clickSuccessTask(item){
+			if(item.latitude && item.longitude){
+				Toast.loading({
+					message: '定位中...',
+					forbidClick: true,
+					duration: 0
+				})
+				try {
+					const { latitude, longitude } = await getLocation()
+					const distance = getCaculateLL(latitude, longitude, item.latitude, item.longitude)
+					Toast.clear()
+					if(distance > 200){
+						upDataList()
+						Dialog({ message: '此设备需要在 200(米)范围内，才可以进行任务! 现在距离设备' + distance + '(米)' });
+						return false
+					}
+					
+				} catch (error) {
+					Toast.fail(typeof error == 'string' ? error : '定位失败！')
+					return false
+				}
+			}
+			
 			const overRemark = ref('')
 			const onChange = (v) => {
 				overRemark.value = v
@@ -240,13 +329,12 @@ const OpenDetails = defineComponent({
 						</div>
 					</div>
 				}
-
 				{
 					isOpen.value &&
-					<>
+					<div class=" bg-blue-300 py-2 my-2 rounded-lg">
 						{
 							detailsList.value.map((v, i) => (
-								<div class="card-box bg-gray-100 m-2  shadow-md overflow-hidden">
+								<div class="card-box bg-gray-100 m-2 mb-3 shadow-md overflow-hidden" key={v.id}>
 									<div class="relative">
 										<div class=" absolute right-0 top-0 bottom-0 flex items-center text-6xl opacity-80">
 											{ StatusIcon(v.status) }
@@ -265,14 +353,22 @@ const OpenDetails = defineComponent({
 												<span>{v.machine_code}</span>
 											</div>
 											<div>
+												<span class=" text-gray-500">网点名称：</span>
+												<span class=" ">{v.address_name}</span>
+											</div>
+											<div>
+												<span class=" text-gray-500">网点地址：</span>
+												<span class=" ">{v.address}</span>
+											</div>
+											<div>
 												<span class=" text-gray-500">距离：</span>
-												<span class=" text-blue-500">{v.distance_text}</span>
+												<span class=" text-blue-500">{v.latitude && v.longitude ? v.distance_text : '未设置'}</span>
 											</div>
 										</div>
 									</div>
 									{/* 快捷导航栏 */}
 									<div class=" flex border-t text-center bg-white text-sm mt-2 text-gray-500">
-										<div class="active:bg-gray-100 flex-1 py-2 text-blue-500"> 
+										<div class="active:bg-gray-100 flex-1 py-2 text-blue-500" onClick={() => toOpenLocation(v)}> 
 											设备导航
 											<Icon name="guide-o" />
 										</div>
@@ -288,9 +384,8 @@ const OpenDetails = defineComponent({
 								</div>
 							))
 						}
-					</>
+					</div>
 				}
-
 				<div class=" text-center text-blue-500 py-2 border-t border text-sm" onClick={() => isOpen.value = !isOpen.value}>
 					{
 						isOpen.value ?

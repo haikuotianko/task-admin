@@ -1,7 +1,12 @@
 <template>
 	<div class=" flex flex-col h-full">
 		<div class="flex-1 overflow-y-auto bg-gray-100">
-			<router-view />
+			<router-view v-slot="{ Component }">
+				<keep-alive>
+					<component :is="Component"  v-if="$route.meta.keepAlive"/>
+				</keep-alive>
+				<component :is="Component"  v-if="!$route.meta.keepAlive"/>
+			</router-view>
 		</div>
 
 		<transition name="slide-fade">
@@ -25,7 +30,7 @@ const showTab = ref(false)
 const tabActive = ref('taskList')
 const tabChange = v => {
 	// tabActive.value = v
-	router.push('/' + v)
+	router.replace('/' + v)
 }
 console.log(route)
 watch(route, () => {

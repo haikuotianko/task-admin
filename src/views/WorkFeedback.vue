@@ -90,6 +90,7 @@ onMounted(async () => {
 })
 
 function getColumnsLabel(value){
+	console.log(value)
 	return columns.value.find(v => v.value == value)?.name || '请选择管理员'
 }
 

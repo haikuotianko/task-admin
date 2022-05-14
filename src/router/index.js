@@ -1,27 +1,25 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import TaskList from '../views/TaskList.vue'
 
 const routes = [
   {
     path: '/',
     name: 'home',
     meta: {
-      showTab: true
+      showTab: true,
+      keepAlive: true
     },
-    component: HomeView
-  },
-  {
-    path: '/about',
-    name: 'about',
-    component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
+    redirect: '/taskList',
+    // component: TaskList
   },
   {
     path: '/taskList', // 任务列表
     name: 'taskList',
     meta: {
-      showTab: true
+      showTab: true,
+      keepAlive: true
     },
-    component: () => import(/* webpackChunkName: "TaskList" */ '../views/TaskList.vue')
+    component: TaskList
   },
   {
     path: '/taskFeedback/:id', // 任务反馈
@@ -37,7 +35,8 @@ const routes = [
     path: '/workOrder', // 工单
     name: 'workOrder',
     meta: {
-      showTab: true
+      showTab: true,
+      // keepAlive: true
     },
     component: () => import(/* webpackChunkName: "workOrder" */ '../views/WorkOrder.vue')
   },
